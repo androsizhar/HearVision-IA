@@ -317,6 +317,59 @@ def _filter_recorder_artifacts(plan: dict) -> None:
     plan["steps"] = trimmed
 
 
+# --- Plan validation -----------------------------------------------------------
+
+_VALID_ACTIONS = {"navigate", "click", "type", "select", "verify", "wait", "extract"}
+_REQUIRED_PLAN_KEYS = ("source_platform", "target_platform", "goal", "steps")
+_REQUIRED_STEP_KEYS = ("number", "action", "intent")
+
+
+def validate_plan(plan: dict) -> list:
+    """
+    Structurally validates a plan before it is handed to the execution agent.
+    Returns a list of human-readable problems; an empty list means the plan
+    is well-formed enough to attempt execution (this does not judge whether
+    the plan is a *good* plan, only whether its shape is safe to consume).
+    """
+    errors = []
+    if not isinstance(plan, dict):
+        return ["Plan is not a JSON object"]
+
+    for key in _REQUIRED_PLAN_KEYS:
+        if key not in plan:
+            errors.append(f"Missing required key: '{key}'")
+
+    steps = plan.get("steps")
+    if steps is not None:
+        if not isinstance(steps, list):
+            errors.append("'steps' must be a list")
+        elif len(steps) == 0:
+            errors.append("'steps' is empty -- nothing to execute")
+        else:
+            seen_numbers = set()
+            for i, step in enumerate(steps):
+                if not isinstance(step, dict):
+                    errors.append(f"Step at index {i} is not an object")
+                    continue
+                for key in _REQUIRED_STEP_KEYS:
+                    if key not in step:
+                        errors.append(f"Step at index {i} is missing '{key}'")
+                action = step.get("action")
+                if action is not None and action not in _VALID_ACTIONS:
+                    errors.append(f"Step {step.get('number', i)} has an unknown action: '{action}'")
+                number = step.get("number")
+                if number is not None:
+                    if number in seen_numbers:
+                        errors.append(f"Duplicate step number: {number}")
+                    seen_numbers.add(number)
+
+    mappings = plan.get("field_mappings")
+    if mappings is not None and not isinstance(mappings, list):
+        errors.append("'field_mappings' must be a list")
+
+    return errors
+
+
 # --- Phase B ---------------------------------------------------------------------
 
 def complete_plan(phase_a_result: dict, user_answers: dict) -> tuple:
@@ -347,6 +400,10 @@ def complete_plan(phase_a_result: dict, user_answers: dict) -> tuple:
     # Trim trailing steps that are recorder artifacts (the user returning to
     # the HearVision AI app to stop the recording -- not part of the real process).
     _filter_recorder_artifacts(plan)
+
+    # Structural check -- catches a malformed plan here, with a clear
+    # message, instead of letting it fail confusingly once execution starts.
+    warnings.extend(validate_plan(plan))
 
     Path("sessions").mkdir(exist_ok=True)
     with open("sessions/plan.json", "w", encoding="utf-8") as f:
