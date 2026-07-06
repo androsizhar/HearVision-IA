@@ -1,0 +1,17 @@
+.env
+*.key
+enc.key
+.hearvision/
+__pycache__/
+*.pyc
+.playwright/
+node_modules/
+data/real/
+hearvision.db
+
+# Real recordings (audio + session events from actual runs) -- never commit
+sessions/*.wav
+sessions/events_*.json
+sessions/plan.json
+sessions/report.json
+!sessions/.gitkeep

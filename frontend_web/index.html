@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HearVision AI</title>
+<link rel="icon" type="image/png" href="/static/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.27.0/plotly.min.js"></script>
+<style>
+:root {
+  /* iOS-style vibrant coral/pink, matching the icon set. */
+  --accent:#FF6F5E; --accent-d:#E85340; --accent-soft:rgba(255,111,94,.12);
+  --brand:#FF6F86;
+  --grad-1:#FFD3A8; --grad-2:#FF9472; --grad-3:#FF6F86;
+
+  /* Neutrals -- warm but light, so the colorful gradient background reads clearly. */
+  --ink:#2B2118; --ink-soft:#5A4A3C; --gray:#8C7A68; --gray-light:#D8C9B4;
+  --hair:#EDE1D3; --surface:#FFFFFF; --bg:#FBF6EF; --white:#FFFFFF;
+
+  --ok:#3FA65C; --ok-bg:#E9F7ED;
+  --warn:#E08A2B; --warn-bg:#FCF0DE;
+  --err:#E5544A; --err-bg:#FCEAE8;
+  --info:#5C8FE0; --info-bg:#EAF1FC;
+
+  --r:14px; --rl:22px;
+  --sh:0 1px 2px rgba(43,33,24,.05), 0 10px 30px -14px rgba(43,33,24,.16);
+  --sh-lift:0 1px 2px rgba(43,33,24,.05), 0 22px 44px -18px rgba(43,33,24,.22);
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif;
+  --font-display:var(--font);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+
+/* Scrollbar */
+*::-webkit-scrollbar{width:9px;height:9px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:var(--gray-light);border-radius:10px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background:var(--gray)}
+::selection{background:var(--accent-soft);color:var(--ink)}
+
+/* Form */
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.form-label{font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--gray)}
+.form-input-wrap{position:relative}
+.form-input{width:100%;padding:12px 14px;border:1px solid var(--hair);border-radius:var(--r);font-family:var(--font);font-size:14px;color:var(--ink);background:var(--surface);outline:none;transition:all .15s}
+.form-input:focus{border-color:var(--accent);background:white;box-shadow:0 0 0 3px var(--accent-soft)}
+.form-input::placeholder{color:var(--gray-light)}
+
+/* App shell */
+.app-shell{display:flex;flex-direction:column;min-height:100vh;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255,211,168,.55) 0%, transparent 42%),
+    radial-gradient(circle at 88% 12%, rgba(255,143,171,.45) 0%, transparent 46%),
+    radial-gradient(circle at 50% 100%, rgba(255,235,205,.6) 0%, transparent 55%),
+    var(--bg);
+}
+.topbar{background:rgba(255,255,255,.72);backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);border-bottom:1px solid var(--hair);padding:0 40px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-brand{display:flex;align-items:center;gap:12px}
+.topbar-right{display:flex;align-items:center;gap:14px}
+.btn-logout{padding:6px 13px;border:none;border-radius:20px;background:var(--accent-soft);color:var(--accent-d);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-logout:hover{border-color:var(--gray-light);color:var(--ink)}
+
+/* Gradient icon badges -- based on the user's own icon design sheet:
+   a warm coral/peach gradient circle with a soft glossy highlight,
+   holding a simple white line icon. Used for every action icon in the app. */
+.icon-badge{
+  background:linear-gradient(135deg,var(--grad-1) 0%,var(--grad-2) 55%,var(--grad-3) 100%);
+  border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 14px -4px rgba(255,111,134,.45), inset 0 -3px 6px rgba(0,0,0,.10), inset 0 2px 3px rgba(255,255,255,.6);
+  flex-shrink:0;position:relative;overflow:hidden;
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease)
+}
+.icon-badge::after{content:'';position:absolute;top:-30%;left:-20%;width:70%;height:70%;
+  background:radial-gradient(circle,rgba(255,255,255,.55) 0%,transparent 70%);pointer-events:none}
+.icon-badge svg{display:block;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;position:relative;z-index:1}
+button .icon-badge,a .icon-badge{cursor:pointer}
+button:hover .icon-badge,a:hover .icon-badge{transform:translateY(-1px);box-shadow:0 9px 18px -4px rgba(255,111,134,.55),inset 0 -3px 6px rgba(0,0,0,.10),inset 0 2px 3px rgba(255,255,255,.6)}
+.icon-badge-sm{width:30px;height:30px}
+.icon-badge-sm svg{width:15px;height:15px}
+.icon-badge-md{width:42px;height:42px}
+.icon-badge-md svg{width:20px;height:20px}
+.icon-badge-lg{width:88px;height:88px}
+.icon-badge-lg svg{width:40px;height:40px}
+
+/* Progress bar */
+.progress-bar{background:var(--white);border-bottom:1px solid var(--hair);padding:0 40px;display:flex;align-items:center;height:46px;gap:0}
+.step{display:flex;align-items:center;gap:8px;padding:0 14px 0 0;font-size:11px;font-weight:500;color:var(--gray-light);letter-spacing:.2px;white-space:nowrap;transition:color .2s}
+.step.active{color:var(--accent)}
+.step.done{color:var(--ok)}
+.step-num{width:20px;height:20px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;transition:all .2s}
+.step.active .step-num{background:var(--accent);border-color:var(--accent);color:white}
+.step.done .step-num{background:var(--ok);border-color:var(--ok);color:white}
+.step-arrow{color:var(--gray-light);margin:0 6px;font-size:13px}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:256px 1fr;min-height:calc(100vh - 102px)}
+.sidebar{background:var(--white);border-right:1px solid var(--hair);padding:26px 20px;display:flex;flex-direction:column;gap:20px}
+.sidebar-label{font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--gray);padding-bottom:6px;border-bottom:1px solid var(--hair)}
+.sidebar input,.sidebar select{width:100%;padding:9px 12px;border:1px solid var(--hair);border-radius:var(--r);font-family:var(--font);font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border-color .15s}
+.sidebar input:focus,.sidebar select:focus{border-color:var(--accent);background:var(--white)}
+.sidebar input::placeholder{color:var(--gray-light)}
+.btn-reset{width:100%;padding:9px;border:1px solid var(--hair);border-radius:var(--r);background:transparent;color:var(--gray);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;margin-top:auto}
+.btn-reset:hover{border-color:var(--gray-light);color:var(--ink)}
+
+/* Sidebar nav */
+.client-nav{display:flex;flex-direction:column;gap:2px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--hair)}
+.client-nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;cursor:pointer;transition:all .2s var(--ease);color:var(--gray);font-size:13px;font-weight:500}
+.client-nav-item:hover{background:var(--surface);color:var(--ink)}
+.client-nav-item.active{background:var(--accent-soft);color:var(--accent-d)}
+.nav-label{font-weight:600;letter-spacing:.1px}
+
+/* History sidebar items */
+.hist-item{padding:8px 10px;background:var(--surface);border-radius:8px;border-left:3px solid var(--ok);display:flex;flex-direction:column;gap:2px}
+.hist-item.err{border-left-color:var(--err)}
+.hist-item-title{font-weight:600;color:var(--ink);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-item-meta{color:var(--gray);font-size:11px}
+
+/* Main */
+.main{padding:36px 44px;display:flex;flex-direction:column;gap:22px}
+.page{display:none}
+.page.active{display:flex;flex-direction:column;gap:22px;animation:rise-in .45s var(--ease)}
+.page-title{font-family:var(--font-display);font-weight:600;font-size:30px;letter-spacing:-.01em;color:var(--ink);line-height:1.15}
+.page-sub{font-size:14px;color:var(--gray)}
+
+/* Cards */
+.card{background:var(--white);border:1px solid var(--hair);border-radius:var(--rl);padding:22px;box-shadow:var(--sh);transition:box-shadow .3s var(--ease),transform .3s var(--ease)}
+.card:hover{box-shadow:var(--sh-lift);transform:translateY(-1px)}
+.card-title{font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--gray);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--hair)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:999px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .18s var(--ease)}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{background:var(--accent-d);transform:translateY(-1px);box-shadow:0 6px 18px -6px rgba(255,111,94,.5)}
+.btn-secondary{background:transparent;color:var(--ink-soft);border:1px solid var(--hair)}
+.btn-secondary:hover{border-color:var(--gray-light);background:var(--surface)}
+.btn-danger{background:transparent;color:var(--err);border:1px solid var(--err)}
+.btn-danger:hover{background:var(--err);color:white}
+.btn-group{display:flex;gap:12px}
+
+/* Recording */
+.record-zone{border:1.5px dashed var(--gray-light);border-radius:var(--rl);padding:48px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;background:var(--surface);transition:all .25s var(--ease)}
+.record-zone.active{border-color:var(--accent);border-style:solid;background:var(--accent-soft)}
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(255,111,94,.35)}70%{box-shadow:0 0 0 18px rgba(255,111,94,0)}100%{box-shadow:0 0 0 0 rgba(255,111,94,0)}}
+.record-title{font-family:var(--font-display);font-weight:600;font-size:20px;letter-spacing:-.01em;color:var(--ink)}
+.record-sub{font-size:13px;color:var(--gray);max-width:400px}
+.record-controls{display:flex;gap:10px;margin-top:6px}
+
+/* Field mapping table */
+.mapping-table{width:100%;border-collapse:collapse}
+.mapping-table th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--gray);padding:8px 12px;border-bottom:1px solid var(--hair)}
+.mapping-table td{padding:9px 12px;border-bottom:1px solid var(--surface);vertical-align:middle}
+.mapping-table tr:last-child td{border-bottom:none}
+.mapping-table input{width:100%;padding:6px 10px;border:1px solid var(--hair);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border-color .15s}
+.mapping-table input:focus{border-color:var(--accent);background:white}
+.conf-bar{display:flex;align-items:center;gap:8px}
+.conf-track{flex:1;height:4px;background:var(--hair);border-radius:2px;overflow:hidden}
+.conf-fill{height:100%;border-radius:2px;transition:width .3s}
+.conf-num{font-size:12px;font-weight:600;min-width:32px}
+
+/* Metrics */
+.metrics-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+.metric-card{background:var(--white);border:1px solid var(--hair);border-radius:var(--rl);padding:18px;display:flex;flex-direction:column;gap:4px;box-shadow:var(--sh);animation:rise-in .5s var(--ease) both}
+.metric-card:nth-child(2){animation-delay:.05s}
+.metric-card:nth-child(3){animation-delay:.10s}
+.metric-card:nth-child(4){animation-delay:.15s}
+.metric-card:nth-child(5){animation-delay:.20s}
+.metric-label{font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--gray)}
+.metric-value{font-weight:700;font-size:28px;letter-spacing:-.02em;color:var(--ink);line-height:1.1}
+.metric-value.red{color:var(--err)}
+.metric-value.green{color:var(--ok)}
+.metric-value.warn{color:var(--warn)}
+@keyframes rise-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Steps */
+.steps-list{display:flex;flex-direction:column;gap:2px}
+.step-item{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:9px;font-size:13px;color:var(--ink-soft);transition:background .15s}
+.step-item:hover{background:var(--surface)}
+.step-item-num{width:22px;height:22px;border-radius:50%;background:var(--hair);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gray);flex-shrink:0}
+
+/* Questions */
+.question-card{border:1px solid var(--hair);border-radius:var(--rl);padding:18px;display:flex;flex-direction:column;gap:8px;background:var(--white);box-shadow:var(--sh);transition:box-shadow .3s var(--ease),transform .3s var(--ease)}
+.question-card:hover{box-shadow:var(--sh-lift);transform:translateY(-1px)}
+.question-text{font-size:15px;font-weight:500;color:var(--ink)}
+.question-why{font-size:12px;color:var(--gray);font-style:italic}
+.question-card input{padding:10px 14px;border:1px solid var(--hair);border-radius:var(--r);font-family:var(--font);font-size:14px;color:var(--ink);background:var(--surface);outline:none;transition:border-color .15s}
+.question-card input:focus{border-color:var(--accent);background:white}
+
+.form-input:focus,.sidebar input:focus,.question-card input:focus,.mapping-table input:focus{box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* Alerts */
+.alert{padding:11px 14px;border-radius:var(--r);font-size:13px;display:flex;align-items:flex-start;gap:8px}
+.alert-warn{background:var(--warn-bg);color:#8A5A16;border-left:3px solid var(--warn)}
+.alert-ok{background:var(--ok-bg);color:#26703F;border-left:3px solid var(--ok)}
+.alert-error{background:var(--err-bg);color:#A33127;border-left:3px solid var(--err)}
+.alert-info{background:var(--info-bg);color:#3A5FA0;border-left:3px solid var(--info)}
+
+/* Results table */
+.results-table{width:100%;border-collapse:collapse;font-size:13px}
+.results-table th{text-align:left;padding:9px 13px;background:var(--surface);font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--gray);border-bottom:1px solid var(--hair)}
+.results-table td{padding:9px 13px;border-bottom:1px solid var(--surface);color:var(--ink-soft)}
+.results-table tr:last-child td{border-bottom:none}
+.results-table tr:hover td{background:var(--surface)}
+
+/* Badge */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.2px}
+.badge-ok{background:var(--ok-bg);color:var(--ok)}
+.badge-warn{background:var(--warn-bg);color:var(--warn)}
+.badge-error{background:var(--err-bg);color:var(--err)}
+
+/* Spinner */
+.spinner-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:56px}
+.spinner{width:34px;height:34px;border:3px solid var(--hair);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner-text{font-size:14px;color:var(--gray)}
+
+/* URL chip */
+.url-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--surface);border:1px solid var(--hair);border-radius:20px;font-size:12px;color:var(--ink-soft);font-family:monospace}
+
+/* Already-known items */
+.already-known-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ok);padding:3px 0}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+
+<!-- ============== WELCOME SPLASH ============== -->
+<div id="splash" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity .5s var(--ease),visibility .5s;cursor:pointer" onclick="dismissSplash()">
+  <img src="/static/logo-full.png" alt="HearVision AI" style="width:min(560px,80vw);height:auto;animation:splash-in .7s var(--ease) both">
+</div>
+<style>
+@keyframes splash-in{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+</style>
+<script>
+setTimeout(function(){
+  var s = document.getElementById('splash');
+  if (!s) return;
+  s.style.opacity = '0';
+  s.style.visibility = 'hidden';
+  setTimeout(function(){ s.remove(); }, 500);
+}, 2200);
+function dismissSplash(){
+  var s = document.getElementById('splash');
+  if (!s) return;
+  s.style.opacity = '0';
+  s.style.visibility = 'hidden';
+  setTimeout(function(){ s.remove(); }, 500);
+}
+</script>
+
+<!-- ============== APP SHELL ============== -->
+<div class="app-shell" id="app-shell" style="display:flex;flex-direction:column">
+  <header class="topbar">
+    <div class="topbar-brand"></div>
+    <div class="topbar-right">
+      <button class="btn-logout" id="btn-voice-toggle" onclick="toggleVoice()" title="Turn the AI's voice on or off">Voice</button>
+    </div>
+  </header>
+
+  <!-- ===== CLIENT PORTAL ===== -->
+  <div id="client-portal" style="display:flex;flex:1;flex-direction:column">
+    <nav class="progress-bar" id="progress-bar">
+      <div class="step active" data-step="1"><div class="step-num">1</div> Recording</div>
+      <span class="step-arrow">&rsaquo;</span>
+      <div class="step" data-step="2"><div class="step-num">2</div> Questions</div>
+      <span class="step-arrow">&rsaquo;</span>
+      <div class="step" data-step="3"><div class="step-num">3</div> Review</div>
+      <span class="step-arrow">&rsaquo;</span>
+      <div class="step" data-step="4"><div class="step-num">4</div> Execution</div>
+      <span class="step-arrow">&rsaquo;</span>
+      <div class="step" data-step="5"><div class="step-num">5</div> Approval</div>
+      <span class="step-arrow">&rsaquo;</span>
+      <div class="step" data-step="6"><div class="step-num">6</div> Report</div>
+    </nav>
+    <div class="layout">
+      <aside class="sidebar" id="client-sidebar">
+        <!-- Nav items -->
+        <div class="client-nav">
+          <div class="client-nav-item active" id="nav-workflow" onclick="clientNav('workflow',this)">
+            <span class="icon-badge icon-badge-sm"><svg viewBox="0 0 24 24"><path d="M13 3 5 13h6l-1 8 8-10h-6l1-8z"/></svg></span>
+            <span class="nav-label">Workflow</span>
+          </div>
+          <div class="client-nav-item" id="nav-history" onclick="clientNav('history',this)">
+            <span class="icon-badge icon-badge-sm"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg></span>
+            <span class="nav-label">History</span>
+          </div>
+        </div>
+
+        <!-- Panel: Workflow (URL + reset) -->
+        <div id="panel-workflow">
+          <div class="sidebar-label" style="margin-bottom:8px">Target portal</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input type="url" id="inp-url" placeholder="https://portal.example.com">
+          </div>
+          <button class="btn-reset" onclick="resetClient()" style="margin-top:auto">Reset</button>
+        </div>
+
+        <!-- Panel: History -->
+        <div id="panel-history" style="display:none;flex-direction:column;gap:10px">
+          <div class="sidebar-label">Recent runs</div>
+          <div id="client-history-list" style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--ink-soft)">
+            <div style="color:var(--gray);font-size:12px;text-align:center;padding:20px 0">Loading...</div>
+          </div>
+        </div>
+      </aside>
+      <main class="main">
+        <!-- CAPTURE -->
+        <div class="page active" id="page-capture" style="position:relative">
+          <img src="/static/rainbow.png" alt="" aria-hidden="true" style="position:absolute;top:-36px;right:-60px;width:1000px;z-index:1;pointer-events:none;transform:scaleX(-1)">
+          <div style="position:relative;z-index:2"><div class="page-title">Capture the workflow</div><div class="page-sub">Perform the process and narrate it out loud. <br>The agent will learn to replicate it.</div></div>
+          <div id="url-info" style="display:none;position:relative;z-index:2"><div class="url-chip"><span id="url-display"></span></div></div>
+          <div class="record-zone" id="record-zone" style="position:relative;z-index:2">
+            <img src="/static/logo-full.png" alt="HearVision AI" id="record-icon" style="width:320px;height:auto;display:block;margin-bottom:-30px">
+            <div class="record-title" id="record-title">Ready to record</div>
+            <div class="record-sub" id="record-sub">Enter the portal URL in the sidebar, press start, and perform the process.</div>
+            <div class="record-controls" id="record-controls">
+              <button class="btn btn-primary" onclick="startRecording()"><span class="icon-badge icon-badge-sm" style="background:rgba(255,255,255,.25);box-shadow:none"><svg viewBox="0 0 24 24" fill="white" stroke="none"><circle cx="12" cy="12" r="7"/></svg></span>Start recording</button>
+            </div>
+          </div>
+          <div id="record-active-controls" style="display:none">
+            <div class="btn-group">
+              <button class="btn btn-secondary" id="btn-pause" onclick="pauseRecording()"><span class="icon-badge icon-badge-sm"><svg viewBox="0 0 24 24"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="13" y="5" width="4" height="14" rx="1"/></svg></span>Pause</button>
+              <button class="btn btn-secondary" onclick="resetRecording()"><span class="icon-badge icon-badge-sm"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7M21 12a9 9 0 0 1-15 6.7"/><path d="M16 3v5h-5M8 21v-5h5"/></svg></span>Reset</button>
+              <button class="btn btn-primary" onclick="stopRecording()"><span class="icon-badge icon-badge-sm" style="background:rgba(255,255,255,.25);box-shadow:none"><svg viewBox="0 0 24 24" fill="white" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></span>Stop and analyze</button>
+            </div>
+          </div>
+        </div>
+        <!-- QUESTIONS -->
+        <div class="page" id="page-questions">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <div><div class="page-title">The agent has questions</div><div class="page-sub">Information that couldn't be seen during recording.</div></div>
+            <button class="btn btn-secondary" id="btn-voice-questions" onclick="narrateQuestions()" style="white-space:nowrap"><span class="icon-badge icon-badge-sm"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8a5 5 0 0 1 0 8"/></svg></span>Listen to questions</button>
+          </div>
+          <div id="already-known-section" style="display:none"><div class="card"><div class="card-title">What was learned without asking</div><div id="already-known-list"></div></div></div>
+          <div id="questions-list"></div>
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="goTo('capture')"><span class="icon-badge icon-badge-sm"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></span>Back</button>
+            <button class="btn btn-primary" onclick="confirmAnswers()"><span class="icon-badge icon-badge-sm" style="background:rgba(255,255,255,.25);box-shadow:none"><svg viewBox="0 0 24 24" fill="white" stroke="none"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg></span>Confirm</button>
+          </div>
+        </div>
+        <!-- REVIEW -->
+        <div class="page" id="page-review">
+          <div><div class="page-title">Review the workflow</div><div class="page-sub">Edit any field that looks incorrect.</div></div>
+          <div class="metrics-row" id="review-metrics"></div>
+          <div class="card"><div class="card-title">Detected steps</div><div class="steps-list" id="steps-list"></div></div>
+          <div class="card"><div class="card-title">Field mapping</div>
+            <table class="mapping-table"><thead><tr><th>Source</th><th>Target field</th><th style="width:180px">Confidence</th><th style="width:110px">Status</th></tr></thead>
+            <tbody id="mapping-tbody"></tbody></table>
+          </div>
+          <div id="flags-alert" style="display:none" class="alert alert-warn"></div>
+
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="goTo('capture')"><span class="icon-badge icon-badge-sm"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></span>Back</button>
+            <button class="btn btn-primary" id="btn-run-agent" onclick="confirmReview()"><span class="icon-badge icon-badge-sm" style="background:rgba(255,255,255,.25);box-shadow:none"><svg viewBox="0 0 24 24" fill="white" stroke="none"><path d="M8 5v14l11-7z"/></svg></span>Run agent</button>
+          </div>
+        </div>
+        <!-- EXECUTION -->
+        <div class="page" id="page-execution">
+          <div><div class="page-title">Agent running</div><div class="page-sub">Navigating the portal autonomously.</div></div>
+          <div id="credentials-section" style="display:none"><div class="card"><div class="card-title">Required information</div><div id="credentials-list" style="display:flex;flex-direction:column;gap:12px"></div><div style="margin-top:16px"><button class="btn btn-primary" onclick="startExecution()"><span class="icon-badge icon-badge-sm" style="background:rgba(255,255,255,.25);box-shadow:none"><svg viewBox="0 0 24 24" fill="white" stroke="none"><path d="M8 5v14l11-7z"/></svg></span>Start execution</button></div></div></div>
+          <div id="execution-spinner" class="spinner-wrap"><div class="spinner"></div><div class="spinner-text" id="spinner-text">Starting the agent...</div></div>
+        </div>
+        <!-- APPROVAL -->
+        <div class="page" id="page-approval">
+          <div><div class="page-title">Approval</div><div class="page-sub">Review the result before marking it as done.</div></div>
+          <div class="metrics-row" id="approval-metrics"></div>
+          <div class="card"><div class="card-title">Detail</div><table class="results-table"><thead><tr><th>Step</th><th>Action</th><th>Status</th></tr></thead><tbody id="results-tbody"></tbody></table></div>
+          <div id="data-section" style="display:none"><div class="card"><div class="card-title">Extracted data</div><pre id="data-pre" style="font-size:12px;color:var(--ink-soft);white-space:pre-wrap;overflow:auto;max-height:180px"></pre></div></div>
+          <div class="btn-group">
+            <button class="btn btn-danger" onclick="goTo('capture')"><span class="icon-badge icon-badge-sm"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></span>Reject</button>
+            <button class="btn btn-primary" onclick="approve()"><span class="icon-badge icon-badge-sm" style="background:rgba(255,255,255,.25);box-shadow:none"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3a9 9 0 1 0 9 9"/><path d="M21 5l-9 9"/></svg></span>Approve and generate report</button>
+          </div>
+        </div>
+        <!-- REPORT -->
+        <div class="page" id="page-result">
+          <div><div class="page-title">Execution report</div><div class="page-sub">Process completed and approved.</div></div>
+          <div class="alert alert-ok" id="result-summary"></div>
+          <div class="metrics-row" id="result-metrics"></div>
+          <div class="card"><div class="card-title">Agent errors</div><div id="error-chart" style="height:240px"></div><table class="results-table" style="margin-top:14px"><thead><tr><th>Step</th><th>Action</th><th>Status</th></tr></thead><tbody id="error-tbody"></tbody></table></div>
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="downloadReport()"><span class="icon-badge icon-badge-sm"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span>Download JSON</button>
+            <button class="btn btn-primary" onclick="resetClient()"><span class="icon-badge icon-badge-sm" style="background:rgba(255,255,255,.25);box-shadow:none"><svg viewBox="0 0 24 24" fill="white" stroke="none"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg></span>New run</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// The API base is relative to the current origin -- the backend serves
+// this same file, so this always points to wherever the app is deployed.
+const API = '';
+
+// -- HTML escaping --------------------------------------------------------------
+// XSS defense: dynamic data (portal names, model output, values from past
+// runs) gets interpolated into innerHTML templates throughout this file.
+// esc() neutralizes '<', '>', '&', and quotes before insertion -- the
+// standard output-encoding defense against a value with embedded HTML or
+// attributes being executed as if it were page markup.
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+// For using a dynamic value as an id="..." attribute: esc() doesn't work
+// here (it would produce &quot; etc. inside the id, and a later
+// getElementById with the raw value would no longer find the element).
+// safeId() reduces the value to a harmless identifier; it's used
+// consistently both when creating the id and when reading it back, so the
+// pairing never breaks.
+function safeId(value) {
+  return String(value ?? '').replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
+// == SIDEBAR NAV ==
+function clientNav(panel, btn) {
+  ['workflow', 'history'].forEach(p => {
+    document.getElementById('panel-' + p).style.display = 'none';
+    document.getElementById('nav-' + p).classList.remove('active');
+  });
+  const el = document.getElementById('panel-' + panel);
+  el.style.display = 'flex';
+  el.style.flexDirection = 'column';
+  btn.classList.add('active');
+  if (panel === 'history') loadClientHistory();
+}
+
+function loadClientHistory() {
+  const list = document.getElementById('client-history-list');
+  fetch(`${API}/history?limit=8`).then(r => r.json()).then(data => {
+    if (!data.length) { list.innerHTML = '<div style="color:var(--gray);font-size:12px;text-align:center;padding:20px 0">No runs yet</div>'; return; }
+    list.innerHTML = data.slice(0, 8).map(s => {
+      const title = s.name || `${s.source_platform || 'Process'} -> ${s.target_platform || ''}`;
+      return `
+      <div class="hist-item ${s.failed_steps > 0 ? 'err' : ''}">
+        <div class="hist-item-title">${esc(title)}</div>
+        <div class="hist-item-meta">${esc((s.created_at || '').slice(0, 10))} - ${esc(s.successful_steps || 0)}/${esc(s.step_count || 0)} ok</div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <a onclick="rerunSession(${s.id})" style="font-size:11px;color:var(--accent);cursor:pointer">Rerun</a>
+          <a onclick="renameSession(${s.id},'${esc(title).replace(/'/g, "\\'")}')" style="font-size:11px;color:var(--gray);cursor:pointer">Rename</a>
+          <a onclick="deleteHistorySession(${s.id})" style="font-size:11px;color:var(--err);cursor:pointer">Delete</a>
+        </div>
+      </div>`;
+    }).join('');
+  }).catch(() => { list.innerHTML = '<div style="color:var(--gray);font-size:12px;text-align:center;padding:20px 0">Connection error</div>'; });
+}
+
+async function rerunSession(id) {
+  try {
+    const res = await fetch(`${API}/history/${id}/plan`);
+    const plan = await res.json();
+    if (plan.error) { showToast(plan.error, 'error'); return; }
+    // Sent to Review (not straight to Execution): stored credentials may
+    // have expired (the vault keeps them for 48h) so it's worth confirming
+    // the plan before running it again, rather than assuming it's still valid.
+    state.plan = plan;
+    renderReview(plan);
+    goTo('review');
+    showToast('Plan loaded -- review it and click "Run agent" to repeat it', 'info');
+  } catch (e) {
+    showToast('Could not load the plan for that session', 'error');
+  }
+}
+
+async function renameSession(id, currentName) {
+  const newName = prompt('New name for this run:', currentName);
+  if (!newName || !newName.trim() || newName === currentName) return;
+  try {
+    const res = await fetch(`${API}/history/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName.trim() })
+    });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+    loadClientHistory();
+  } catch (e) { showToast('Could not rename', 'error'); }
+}
+
+async function deleteHistorySession(id) {
+  if (!confirm('Delete this run from history? This cannot be undone.')) return;
+  try {
+    const res = await fetch(`${API}/history/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+    loadClientHistory();
+  } catch (e) { showToast('Could not delete', 'error'); }
+}
+
+let state = { recording: false, paused: false, phaseA: null, plan: null, confirmedPlan: null, results: null };
+
+// == VOICE (ElevenLabs TTS) ==
+const VOICE_ID = '9cySrnzVAcRAUGO8JQtx';
+let voiceEnabled = true;
+let voiceAvailable = false;
+let _currentAudio = null;
+let _voiceQueue = Promise.resolve();   // serializes narration so lines never overlap
+
+// Detect whether ElevenLabs is configured on the backend.
+fetch(`${API}/tts/available`)
+  .then(r => r.json())
+  .then(d => {
+    voiceAvailable = !!d.available;
+    const b = document.getElementById('btn-voice-toggle');
+    if (b) { b.style.opacity = voiceAvailable ? '1' : '0.4'; b.title = voiceAvailable ? 'Voice active' : 'Voice not configured (ELEVENLABS_API_KEY)'; }
+  }).catch(() => {});
+
+function speak(text, { wait = false } = {}) {
+  if (!voiceEnabled || !voiceAvailable || !text) return Promise.resolve();
+  const task = () => fetch(`${API}/tts`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voice: VOICE_ID })
+    })
+    .then(res => {
+      if (!res.ok) return res.json().then(e => { console.warn('[TTS]', e.error); return Promise.reject(); });
+      return res.blob();
+    })
+    .then(blob => new Promise(resolve => {
+      if (_currentAudio) { try { _currentAudio.pause(); URL.revokeObjectURL(_currentAudio.src); } catch (e) {} }
+      const url = URL.createObjectURL(blob);
+      _currentAudio = new Audio(url);
+      _currentAudio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+      _currentAudio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+      _currentAudio.play().catch(resolve);
+      if (!wait) resolve();
+    }))
+    .catch(() => {});
+  _voiceQueue = _voiceQueue.then(task);
+  return _voiceQueue;
+}
+
+function stopVoice() {
+  if (_currentAudio) { try { _currentAudio.pause(); } catch (e) {} _currentAudio = null; }
+  _voiceQueue = Promise.resolve();   // clear the queue so stale messages don't play
+}
+
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  if (!voiceEnabled) stopVoice();
+  const b = document.getElementById('btn-voice-toggle');
+  if (b) { b.textContent = voiceEnabled ? 'Voice' : 'Voice (off)'; b.style.color = voiceEnabled ? '' : 'var(--gray)'; }
+}
+
+// -- Narration points throughout the flow --------------------------------------
+
+function narrateQuestions() {
+  const questions = (state.phaseA || {}).questions || [];
+  if (!questions.length) {
+    speak('No questions from me. I already learned everything needed to run the process.'); return;
+  }
+  const intro = questions.length === 1
+    ? 'I have one question before running.'
+    : `I have ${questions.length} questions before running.`;
+  const body = questions.map((q, i) => `Question ${i + 1}: ${q.question}`).join('. ');
+  speak(`${intro} ${body}`, { wait: true });
+}
+
+function narrateWelcome() {
+  speak('Welcome to HearVision AI. Let\'s record your first process.');
+}
+
+function narrateAnalysis() {
+  speak('Recording complete. Analyzing the process with AI. One moment.');
+}
+
+function narrateReview(plan) {
+  const stepCount = (plan.steps || []).length, fieldCount = (plan.field_mappings || []).length;
+  speak(`Plan learned. I found ${stepCount} steps and ${fieldCount} mapped fields. Review everything before running.`);
+}
+
+function narrateExecutionReady() {
+  speak('Plan confirmed. Starting autonomous execution.');
+}
+
+function narrateResult(results) {
+  const ok = (results || []).filter(r => r.status === 'ok').length;
+  const total = (results || []).length;
+  const err = total - ok;
+  if (ok === total)
+    speak(`Process completed successfully. All ${total} steps ran correctly.`);
+  else if (ok > 0)
+    speak(`Process finished. ${ok} of ${total} steps succeeded. ${err} steps need review.`);
+  else
+    speak('The process could not be completed. Check the errors in the report.');
+}
+
+// == CLIENT NAVIGATION ==
+const STEP_NUM = { capture: 1, questions: 2, review: 3, execution: 4, approval: 5, result: 6 };
+function goTo(stage) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = document.getElementById('page-' + stage);
+  if (pg) pg.classList.add('active');
+  document.querySelectorAll('.step[data-step]').forEach(s => {
+    const n = parseInt(s.dataset.step), cur = STEP_NUM[stage];
+    s.classList.remove('active', 'done');
+    if (n === cur) s.classList.add('active'); else if (n < cur) s.classList.add('done');
+  });
+  window.scrollTo(0, 0);
+}
+
+function getThreshold() { return 0.70; }
+function getUrl() { return document.getElementById('inp-url').value; }
+
+// == RECORDING ==
+async function startRecording() {
+  if (state.recording || state._starting) return;  // guard against double-click / an in-flight duplicate request
+  const url = getUrl();
+  if (!url) { showToast('Enter the portal URL first', 'error'); return; }
+  const btn = document.querySelector('#record-zone .btn-primary');
+  if (btn) btn.disabled = true;
+  state._starting = true;
+  try {
+    await fetch(`${API}/recording/start`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ portal_url: url, email: '' }) });
+    state.recording = true; state.paused = false;
+    document.getElementById('url-info').style.display = 'block';
+    document.getElementById('url-display').textContent = url;
+    document.getElementById('record-zone').classList.add('active');
+    document.getElementById('record-icon').textContent = '';
+    document.getElementById('record-title').textContent = 'Recording...';
+    document.getElementById('record-sub').textContent = 'Perform the process and narrate it out loud.';
+    document.getElementById('record-controls').style.display = 'none';
+    document.getElementById('record-active-controls').style.display = 'flex';
+  } finally {
+    state._starting = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function pauseRecording() {
+  if (!state.paused) {
+    await fetch(`${API}/recording/pause`, { method: 'POST' }); state.paused = true;
+    document.getElementById('btn-pause').textContent = 'Resume';
+    document.getElementById('record-zone').classList.remove('active');
+    document.getElementById('record-icon').textContent = '';
+    document.getElementById('record-title').textContent = 'Paused';
+  } else {
+    await fetch(`${API}/recording/resume`, { method: 'POST' }); state.paused = false;
+    document.getElementById('btn-pause').textContent = 'Pause';
+    document.getElementById('record-zone').classList.add('active');
+    document.getElementById('record-icon').textContent = '';
+    document.getElementById('record-title').textContent = 'Recording...';
+  }
+}
+
+async function resetRecording() {
+  await fetch(`${API}/recording/reset`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ portal_url: getUrl(), email: '' }) });
+  state.paused = false;
+  document.getElementById('btn-pause').textContent = 'Pause';
+  document.getElementById('record-zone').classList.add('active');
+  document.getElementById('record-icon').textContent = '';
+  document.getElementById('record-title').textContent = 'Recording (reset)...';
+}
+
+async function stopRecording() {
+  document.getElementById('record-active-controls').style.display = 'none';
+  document.getElementById('record-zone').classList.remove('active');
+  document.getElementById('record-icon').textContent = '';
+  document.getElementById('record-title').textContent = 'Analyzing...';
+  document.getElementById('record-sub').textContent = 'Please wait while the agent processes your recording.';
+  narrateAnalysis();
+  try {
+    const res = await fetch(`${API}/recording/stop`, { method: 'POST' });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); resetRecordUI(); return; }
+    state.phaseA = data;
+    if (data.questions && data.questions.length > 0) { renderQuestions(data); goTo('questions'); }
+    else {
+      const r2 = await fetch(`${API}/plan/complete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ answers: {} }) });
+      const plan = await r2.json();
+      state.plan = plan; renderReview(plan); goTo('review');
+      narrateReview(plan);
+    }
+  } catch (e) { showToast('Error: ' + e.message, 'error'); resetRecordUI(); }
+}
+
+function resetRecordUI() {
+  document.getElementById('record-zone').classList.remove('active');
+  document.getElementById('record-icon').textContent = '';
+  document.getElementById('record-title').textContent = 'Ready to record';
+  document.getElementById('record-sub').textContent = 'Enter the portal URL, press start, and perform the process.';
+  document.getElementById('record-controls').style.display = 'flex';
+  document.getElementById('record-active-controls').style.display = 'none';
+  state.recording = false;
+}
+
+// == QUESTIONS ==
+function renderQuestions(data) {
+  const list = document.getElementById('questions-list'); list.innerHTML = '';
+  if (data.already_known && data.already_known.length > 0) {
+    document.getElementById('already-known-section').style.display = 'block';
+    document.getElementById('already-known-list').innerHTML = data.already_known.map(c => `<div class="already-known-item">${esc(c)}</div>`).join('');
+  }
+  data.questions.forEach(q => {
+    const isPass = q.is_password || ['password', 'pass', 'secret'].some(w => q.field.toLowerCase().includes(w));
+    const div = document.createElement('div'); div.className = 'question-card';
+    div.innerHTML = `<div class="question-text">${esc(q.question)}</div><div class="question-why">Why I need it: ${esc(q.reason)}</div><input type="${isPass ? 'password' : 'text'}" id="answer-${safeId(q.field)}" placeholder="Your answer..." autocomplete="off">`;
+    list.appendChild(div);
+  });
+  // The AI reads its questions out loud automatically.
+  narrateQuestions();
+}
+
+async function confirmAnswers() {
+  const answers = {};
+  let missing = [];
+  state.phaseA.questions.forEach(q => {
+    const v = document.getElementById('answer-' + safeId(q.field))?.value?.trim();
+    if (!v) missing.push(q.field);
+    answers[q.field] = v || '';
+  });
+  if (missing.length > 0) { showToast('Missing answers: ' + missing.join(', '), 'warn'); return; }
+  const res = await fetch(`${API}/plan/complete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ answers }) });
+  const plan = await res.json();
+  state.plan = plan; renderReview(plan); goTo('review');
+}
+
+// == REVIEW ==
+function renderReview(plan) {
+  const threshold = getThreshold();
+  document.getElementById('review-metrics').innerHTML = `
+    <div class="metric-card"><div class="metric-label">Source</div><div class="metric-value" style="font-size:16px">${esc(plan.source_platform || '-')}</div></div>
+    <div class="metric-card"><div class="metric-label">Target</div><div class="metric-value" style="font-size:16px">${esc(plan.target_platform || '-')}</div></div>
+    <div class="metric-card"><div class="metric-label">Steps</div><div class="metric-value red">${(plan.steps || []).length}</div></div>
+    <div class="metric-card"><div class="metric-label">Fields</div><div class="metric-value">${(plan.field_mappings || []).length}</div></div>`;
+  document.getElementById('steps-list').innerHTML = (plan.steps || []).map(p => `<div class="step-item"><div class="step-item-num">${p.number}</div><span>${esc(p.intent)}</span></div>`).join('');
+  const tbody = document.getElementById('mapping-tbody'); tbody.innerHTML = '';
+  (plan.field_mappings || []).forEach((c, i) => {
+    const p = c.confidence || 1;
+    const color = p >= threshold ? '#3FA65C' : p >= threshold - .15 ? '#E08A2B' : '#E5544A';
+    const label = p >= threshold ? 'Acts alone' : p >= threshold - .15 ? 'Review' : 'Needs correction';
+    const badge = p >= threshold ? 'badge-ok' : p >= threshold - .15 ? 'badge-warn' : 'badge-error';
+    tbody.innerHTML += `<tr><td><input type="text" id="sf_${i}" value="${esc(c.source_field)}"></td><td><input type="text" id="tf_${i}" value="${esc(c.target_field)}"></td><td><div class="conf-bar"><div class="conf-track"><div class="conf-fill" style="width:${p * 100}%;background:${color}"></div></div><span class="conf-num" style="color:${color}">${p.toFixed(2)}</span></div></td><td><span class="badge ${badge}">${label}</span></td></tr>`;
+  });
+  const flags = (plan.field_mappings || []).filter(c => (c.confidence || 1) < threshold);
+  const alertEl = document.getElementById('flags-alert');
+  if (flags.length > 0) { alertEl.style.display = 'flex'; alertEl.textContent = `${flags.length} field(s) with low confidence.` } else { alertEl.style.display = 'none' }
+}
+
+function confirmReview() {
+  const plan = state.plan, threshold = getThreshold();
+  plan.field_mappings = (plan.field_mappings || []).map((c, i) => ({ source_field: document.getElementById(`sf_${i}`)?.value || c.source_field, target_field: document.getElementById(`tf_${i}`)?.value || c.target_field, confidence: c.confidence, flag: (c.confidence || 1) < threshold }));
+  state.confirmedPlan = plan; renderExecution(plan); goTo('execution');
+}
+
+// == EXECUTION ==
+function renderExecution(plan) {
+  const needed = plan.required_credentials || [];
+  if (needed.length > 0) {
+    document.getElementById('credentials-section').style.display = 'block';
+    document.getElementById('execution-spinner').style.display = 'none';
+    document.getElementById('credentials-list').innerHTML = needed.map(item => { const isP = ['password', 'pass', 'secret'].some(w => item.toLowerCase().includes(w)); return `<div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:12px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px">${esc(item)}</label><input type="${isP ? 'password' : 'text'}" id="credential-${safeId(item)}" class="form-input"></div>` }).join('');
+  } else { document.getElementById('credentials-section').style.display = 'none'; document.getElementById('execution-spinner').style.display = 'flex'; runAgent(); }
+}
+
+async function startExecution() {
+  const creds = {};
+  (state.confirmedPlan.required_credentials || []).forEach(item => { creds[item] = document.getElementById('credential-' + safeId(item))?.value || ''; });
+  document.getElementById('credentials-section').style.display = 'none';
+  document.getElementById('execution-spinner').style.display = 'flex';
+  state.credentials = creds; runAgent();
+}
+
+async function runAgent() {
+  const msgs = ['Starting the agent...', 'Opening the portal...', 'Navigating the platform...', 'Extracting data...', 'Processing results...'];
+  let mi = 0;
+  const tick = setInterval(() => {
+    document.getElementById('spinner-text').textContent = msgs[mi % msgs.length];
+    mi++;
+  }, 2500);
+  try {
+    const res = await fetch(`${API}/agent/run`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan: state.confirmedPlan, credentials: state.credentials || {}, email: '' }) });
+    clearInterval(tick);
+    const data = await res.json();
+    state.results = data.results; renderApproval(data.results); goTo('approval');
+    narrateResult(data.results);
+  } catch (e) { clearInterval(tick); showToast('Error: ' + e.message, 'error'); document.getElementById('execution-spinner').style.display = 'none'; }
+}
+
+// == APPROVAL ==
+function renderApproval(res) {
+  const ok = res.filter(r => r.status === 'ok').length, warn = res.filter(r => r.status === 'warning').length, err = res.filter(r => r.status === 'error').length;
+  document.getElementById('approval-metrics').innerHTML = `<div class="metric-card"><div class="metric-label">Total</div><div class="metric-value">${res.length}</div></div><div class="metric-card"><div class="metric-label">Successful</div><div class="metric-value green">${ok}</div></div><div class="metric-card"><div class="metric-label">Warnings</div><div class="metric-value warn">${warn}</div></div><div class="metric-card"><div class="metric-label">Errors</div><div class="metric-value red">${err}</div></div>`;
+  document.getElementById('results-tbody').innerHTML = res.map(r => { const badge = r.status === 'ok' ? 'badge-ok' : r.status === 'warning' ? 'badge-warn' : 'badge-error'; return `<tr><td>${esc(r.step)}</td><td><code style="font-size:12px;background:var(--surface);padding:2px 6px;border-radius:3px">${esc(r.action)}</code></td><td><span class="badge ${badge}">${esc(r.status)}</span></td></tr>` }).join('');
+  const data = Object.fromEntries(res.filter(r => r.extracted_data).map(r => [`step_${r.step}`, r.extracted_data]));
+  if (Object.keys(data).length > 0) { document.getElementById('data-section').style.display = 'block'; document.getElementById('data-pre').textContent = JSON.stringify(data, null, 2) }
+}
+
+function approve() { renderResult(state.results, state.confirmedPlan); goTo('result'); }
+
+// == REPORT ==
+function renderResult(res, plan) {
+  const ok = res.filter(r => r.status === 'ok').length, err = res.filter(r => r.status !== 'ok').length;
+  document.getElementById('result-summary').textContent = `Completed: ${ok}/${res.length} steps successful - ${plan.source_platform} -> ${plan.target_platform}`;
+  document.getElementById('result-metrics').innerHTML = `<div class="metric-card"><div class="metric-label">Successful</div><div class="metric-value green">${ok}</div></div><div class="metric-card"><div class="metric-label">Errors</div><div class="metric-value red">${err}</div></div><div class="metric-card"><div class="metric-label">Source</div><div class="metric-value" style="font-size:14px">${esc(plan.source_platform || '-')}</div></div><div class="metric-card"><div class="metric-label">Target</div><div class="metric-value" style="font-size:14px">${esc(plan.target_platform || '-')}</div></div>`;
+  renderErrorChart(res);
+  document.getElementById('error-tbody').innerHTML = res.map(r => { const badge = r.status === 'ok' ? 'badge-ok' : r.status === 'warning' ? 'badge-warn' : 'badge-error'; return `<tr><td>${esc(r.step)}</td><td><code style="font-size:12px;background:var(--surface);padding:2px 6px;border-radius:3px">${esc(r.action)}</code></td><td><span class="badge ${badge}">${esc(r.status)}</span></td></tr>` }).join('');
+}
+
+function renderErrorChart(res) {
+  const by = {};
+  res.forEach(r => { if (!by[r.action]) by[r.action] = { ok: 0, warning: 0, error: 0 }; by[r.action][r.status] = (by[r.action][r.status] || 0) + 1 });
+  const actions = Object.keys(by);
+  Plotly.newPlot('error-chart', [{ x: actions, y: actions.map(a => by[a].ok || 0), name: 'OK', type: 'bar', marker: { color: '#3FA65C' } }, { x: actions, y: actions.map(a => by[a].warning || 0), name: 'Warning', type: 'bar', marker: { color: '#E08A2B' } }, { x: actions, y: actions.map(a => by[a].error || 0), name: 'Error', type: 'bar', marker: { color: '#E5544A' } }], { barmode: 'group', paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', margin: { t: 10, b: 36, l: 36, r: 10 }, xaxis: { gridcolor: '#EDE1D3' }, yaxis: { title: 'Count', gridcolor: '#EDE1D3' }, legend: { orientation: 'h', y: 1.1 }, font: { family: "Inter,sans-serif", size: 11, color: '#5A4A3C' } }, { responsive: true, displayModeBar: false });
+}
+
+function downloadReport() {
+  const blob = new Blob([JSON.stringify({ plan: state.confirmedPlan, results: state.results }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'hearvision_report.json'; a.click();
+}
+
+function resetClient() {
+  stopVoice();
+  fetch(`${API}/recording/reset`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ portal_url: '', email: '' }) }).catch(() => {});
+  state = { recording: false, paused: false, phaseA: null, plan: null, confirmedPlan: null, results: null };
+  resetRecordUI();
+  document.getElementById('url-info').style.display = 'none';
+  document.getElementById('already-known-section').style.display = 'none';
+  document.getElementById('questions-list').innerHTML = '';
+  goTo('capture');
+}
+
+// == TOAST ==
+function showToast(msg, type = 'info') {
+  const cls = { info: 'alert-info', warn: 'alert-warn', error: 'alert-error', ok: 'alert-ok' }[type];
+  const el = document.createElement('div');
+  el.className = `alert ${cls}`;
+  el.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;max-width:380px;animation:fadeIn .2s ease;box-shadow:0 4px 16px rgba(0,0,0,.12)';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+const sty = document.createElement('style');
+sty.textContent = '@keyframes fadeIn{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}';
+document.head.appendChild(sty);
+
+// == STARTUP ==
+// There is no login screen -- the app opens directly into the main flow.
+narrateWelcome();
+</script>
+</body>
+</html>

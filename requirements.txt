@@ -1,0 +1,26 @@
+# --- Core AI ---------------------------------------------------------------------
+anthropic>=0.40.0
+groq>=0.9.0
+
+# --- Browser agent -----------------------------------------------------------------
+browser-use>=0.1.0          # main automation engine
+playwright>=1.44.0          # browser runtime used by browser-use
+
+# --- Recorder --------------------------------------------------------------------
+pillow>=10.0.0
+mss>=9.0.0
+pynput>=1.7.0
+pyaudio>=0.2.14             # on Windows: pip install pipwin && pipwin install pyaudio
+
+# --- Backend ---------------------------------------------------------------------
+fastapi>=0.110.0
+uvicorn>=0.29.0
+python-multipart>=0.0.9
+pydantic>=2.0.0             # model validation (required by FastAPI)
+httpx>=0.27.0               # HTTP client for ElevenLabs TTS (voice)
+
+# --- Security --------------------------------------------------------------------
+cryptography>=41.0.0        # Fernet encryption (AES-128-CBC + HMAC) for the secrets vault
+
+# --- Utilities -------------------------------------------------------------------
+python-dotenv>=1.0.0
