@@ -1,5 +1,8 @@
 # HearVision AI
 
+![Tests](https://github.com/androsizhar/HearVision-IA/actions/workflows/tests.yml/badge.svg)
+
+
 **Show it a repetitive process once. It learns by watching your screen and listening to you explain it. If anything is unclear, it asks before touching anything on its own. After that, it repeats the process by itself.**
 
 Built to be installed and adapted for any individual project -- it doesn't assume a specific company, sales team, or process type.
@@ -70,7 +73,7 @@ The same principle extends to on-page content during execution: text on a visite
 
 ```bash
 git clone <your-repo-url>
-cd hearvision-ai
+cd HearVision-IA
 pip install -r requirements.txt
 playwright install chromium
 cp .env.example .env   # fill in at least ANTHROPIC_API_KEY
