@@ -6,6 +6,32 @@ Built to be installed and adapted for any individual project -- it doesn't assum
 
 &nbsp;
 
+<p align="center">
+  <img src="screenshots/01-capture.png" width="80%">
+</p>
+
+## Screenshots
+
+**Recording** — show it a process once, no login or setup screen in the way.
+
+**Review** — the learned steps and field mapping, editable before anything runs.
+
+<p align="center">
+  <img src="screenshots/02-review.png" width="49%">
+  <img src="screenshots/03-approval.png" width="49%">
+</p>
+
+**Report** — per-step results plus the structured data the agent extracted along the way.
+
+**History** — every run is saved locally; re-run, rename, or delete any of them.
+
+<p align="center">
+  <img src="screenshots/04-report.png" width="49%">
+  <img src="screenshots/05-history.png" width="49%">
+</p>
+
+&nbsp;
+
 ## How it works
 
 | Step | What happens |
