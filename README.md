@@ -25,6 +25,19 @@ Built to be installed and adapted for any individual project -- it doesn't assum
 
 **History** — every run is saved locally; re-run, rename, or delete any of them.
 
+### Data entry between two systems
+
+A common use case: a person maintains a spreadsheet, then manually re-enters
+each row into a web portal that doesn't talk to that spreadsheet -- a
+customer form, an internal ordering system, a CRM. HearVision AI learns that
+handoff by watching it done once: it maps each spreadsheet column to its
+corresponding field in the portal (even when the two use completely
+different names for the same data), asks only for what it couldn't
+figure out on its own (like login credentials), and then repeats the
+entry for the rest of the rows. This is where the field-mapping and
+reasoning steps (Phase A/B) do the most work, since the agent has to
+track a source and a target that don't share a common structure.
+
 <p align="center">
   <img src="screenshots/04-report.png" width="49%">
   <img src="screenshots/05-history.png" width="49%">
